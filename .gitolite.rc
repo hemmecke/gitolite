@@ -18,10 +18,10 @@
     # if you're using mirroring, you need a hostname.  This is *one* simple
     # word, not a full domain name.  See documentation if in doubt
     # HOSTNAME                  =>  'darkstar',
-    UMASK                       =>  0077,
+    UMASK                       =>  0027,
 
     # look in the "GIT-CONFIG" section in the README for what to do
-    GIT_CONFIG_KEYS             =>  '',
+    GIT_CONFIG_KEYS             =>  'hooks..* gitweb..*',
 
     # comment out if you don't need all the extra detail in the logfile
     LOG_EXTRA                   =>  1,
@@ -62,7 +62,7 @@
             # 'sskm'            =>  1,
             'writable'          =>  1,
             'list-dangling-repos'          =>  1,
-            # 'D'               =>  1,
+            'D'               =>  1,
         },
 
     # comment out or uncomment as needed
@@ -119,7 +119,7 @@
         ],
 
     # comment out or uncomment as needed
-    # these will run in sequence after a new wild repo is created
+    # these will run in sequence after a new repo is created
     POST_CREATE                 =>
         [
             'post-compile/update-git-configs',
