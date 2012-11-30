@@ -70,7 +70,7 @@
     SYNTACTIC_SUGAR             =>
         [
             # 'continuation-lines',
-            # 'keysubdirs-as-groups',
+            'keysubdirs-as-groups',
         ],
 
     # comment out or uncomment as needed
