@@ -16,17 +16,27 @@ usage() if @ARGV and $ARGV[0] eq '-h';
 
 my $rb = $rc{GL_REPO_BASE};
 my $ab = $rc{GL_ADMIN_BASE};
+# This will be the subdirectory under "keydirs" in which the guest
+# keys will be stored. To prevent denial of service, this directory
+# should better start with 'zzz'.
+my $guestkeys_dir = "zzzzz-guests";
+my $forbidden_id_pattern = qr(^[^@]+$);
+my $gkm = $rc{COMMANDS}{'gkm'};
+if(ref($gkm) eq 'HASH') {
+    $forbidden_id_pattern = $rc{COMMANDS}{'gkm'}{FORBIDDEN_ID_PATTERN} || '.';
+    if(defined $rc{COMMANDS}{'gkm'}{GUESTS_DIRECTORY}) {
+        my $gd = $rc{COMMANDS}{'gkm'}{GUESTS_DIRECTORY};
+        $guestkeys_dir = $gd if ($gd =~ /[0-9A-Za-z_-]+/);
+    }
+}
+
+print "[$gkm]\n";
+print "[$forbidden_id_pattern]\n";
+print "[$guestkeys_dir]\n";
 
 # save arguments for later
 my $operation = shift || 'list';
 my $keyid     = shift || '';
-# keyid must fit a very specific pattern
-# They must look like email addresses (all in lowercase).
-# It's not really necessary to be an existing address, but
-# we intend to use it as a unique identifier.
-# We definitely don't want two @ in this keyid!!!
-$keyid and $keyid !~ /^[0-9a-z][a-z0-9._%+-]*@([a-z0-9-]+\.)+[a-z][a-z]+$/
-       and die "keyid should be an email address (all lowercase): $keyid\n";
 
 # get the actual userid
 my $gl_user = $ENV{GL_USER};
@@ -35,10 +45,6 @@ die "you are not in the the group \@guest-key-managers\n"
 
 # get to the keydir
 chdir("$ab/keydir");
-
-# This will be the subdirectory under "keydirs" in which the guest keys
-# will be stored.
-my $guestkeys_dir = "zzzzz-guests";
 
 # ----
 # first collect the keys
@@ -74,7 +80,13 @@ if ( $operation eq 'list' ) {
     }
     print "\n\n";
     exit;
-} elsif ( $operation eq 'add' ) {
+}
+
+if($keyid eq '' or $keyid =~ /$forbidden_id_pattern/) {
+       die "keyid matches forbidden pattern: '$keyid'\n";
+}
+
+if ( $operation eq 'add' ) {
     print STDERR "Please supply the new key on STDIN.\n";
     print STDERR "Try something like this:\n";
     print STDERR 'cat foo.pub | ssh git@GITOLITESERVER gkm add '."$keyid\n";
@@ -109,7 +121,7 @@ sub cd_temp_clone {
 
 sub fingerprint {
     my $fp = `ssh-keygen -l -f $_[0]`;
-    die "does not seem to be a valid pubkey\n" unless $fp =~ /(([0-9a-f]+:)+[0-9a-f]+ )/i;
+    die "does not seem to be a valid pubkey\n" unless $fp =~ /(([0-9a-f]+:)+[0-9a-f]+) /i;
     return $1;
 }
 
@@ -158,7 +170,7 @@ sub add_guest {
 sub del_guest {
     my ( $gl_user, $keyid ) = @_;
     my $fp = $guestkeys{$gl_user}{$keyid};
-    die "key $keyid not found\n" unless $fp;
+    die "key '$keyid' not found\n" unless $fp;
 
     cd_temp_clone();
     chdir("keydir");
